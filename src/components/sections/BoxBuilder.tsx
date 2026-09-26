@@ -1,11 +1,12 @@
-import { RotateCcw, Shuffle, X } from 'lucide-react'
+import { Plus, RotateCcw, Shuffle, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { builderIntro } from '../../data/content'
-import { boxSizes, flavors, getFlavor, type Flavor } from '../../data/products'
+import { boxSizes, flavors, getFlavor, products, type Flavor, type Product } from '../../data/products'
 import { useInView } from '../../lib/hooks'
 import { flavorBreakdown, priceLabel } from '../../lib/order'
 import { useBuilder } from '../../state/builder'
 import { useOrder } from '../../state/order'
+import { ProductOptions } from '../product/ProductOptions'
 import { ArrowNudge, Button } from '../ui/Button'
 import { Picture } from '../ui/Picture'
 import { Reveal } from '../ui/Reveal'
@@ -13,6 +14,8 @@ import { SectionHeading } from '../ui/SectionHeading'
 import { Stepper } from '../ui/Stepper'
 
 const legend = 'mb-3 text-xs font-bold tracking-[0.16em] text-muted uppercase'
+// Everything that isn't built as a box (e.g. cheese rolls) is offered next to the builder.
+const extras = products.filter((p) => p.action === 'options')
 
 export function BoxBuilder() {
   const box = useBuilder()
@@ -23,6 +26,7 @@ export function BoxBuilder() {
   // The "box is full" hint belongs to the box it was shown for; any change hides it.
   const [fullFor, setFullFor] = useState<typeof box.slots | null>(null)
   const [shake, setShake] = useState(false)
+  const [extra, setExtra] = useState<Product | null>(null)
 
   const { setInView } = box
   useEffect(() => {
@@ -129,7 +133,7 @@ export function BoxBuilder() {
           </Reveal>
 
           {/* Choices */}
-          <Reveal delay={80} className="@container lg:col-start-1 lg:row-span-2 lg:row-start-1">
+          <Reveal delay={80} className="@container lg:col-start-1 lg:row-start-1">
             <fieldset>
               <legend className={legend}>Box size</legend>
               <div className="flex flex-wrap gap-2">
@@ -248,12 +252,37 @@ export function BoxBuilder() {
               </Button>
             </div>
           </Reveal>
+
+          {/* The rest of the menu, so "Order now" reaches every product */}
+          {extras.length > 0 && (
+            <Reveal delay={120} className="lg:col-start-1 lg:row-start-2">
+              <h3 className={`${legend} font-sans`}>Also from the oven</h3>
+              <ul className="grid gap-3">
+                {extras.map((p) => (
+                  <li key={p.id} className="flex items-center gap-4 rounded-[1.25rem] bg-paper p-3 pr-4 shadow-soft sm:pr-5">
+                    <span className="size-18 shrink-0 overflow-hidden rounded-2xl bg-oat">
+                      <Picture image={p.image} alt="" sizes="72px" className="size-full object-cover" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-display text-[1.3rem] leading-tight">{p.name}</span>
+                      <span className="mt-0.5 block text-sm leading-snug text-muted">{p.description}</span>
+                    </span>
+                    <Button variant="secondary" size="sm" onClick={() => setExtra(p)} aria-label={`Add ${p.name}`}>
+                      <Plus className="size-4" aria-hidden="true" /> Add
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
+          )}
         </div>
 
         <p className="sr-only" aria-live="polite">
           {status}
         </p>
       </div>
+
+      <ProductOptions product={extra} onClose={() => setExtra(null)} />
     </section>
   )
 }
