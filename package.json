@@ -6,11 +6,12 @@
   "description": "Website for Roll Up Cinnamons \u2014 homemade soft cinnamon rolls in Lapu-Lapu City.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "images": "node scripts/build-images.mjs",
-    "brand": "node scripts/build-brand.mjs"
+    "brand": "node scripts/build-brand.mjs",
+    "icons": "node scripts/build-icons.mjs"
   },
   "engines": {
     "node": ">=20.19"

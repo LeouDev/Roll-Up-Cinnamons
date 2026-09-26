@@ -1,0 +1,13 @@
+{
+  "name": "Roll Up Cinnamons",
+  "short_name": "Roll Up",
+  "description": "Homemade soft cinnamon rolls, packed with variety of flavors. Lapu-Lapu City.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fbf5ec",
+  "theme_color": "#fbf5ec",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

@@ -26,14 +26,12 @@ export const testimonials: Testimonial[] = [
     quote: 'Customer review will appear here.',
     name: 'Customer Name',
     source: 'Facebook review',
-    rating: 5,
     placeholder: true,
   },
   {
     quote: 'Customer review will appear here.',
     name: 'Customer Name',
     source: 'Facebook review',
-    rating: 5,
     placeholder: true,
   },
 ]

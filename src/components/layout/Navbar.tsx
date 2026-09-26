@@ -60,7 +60,7 @@ export function Navbar() {
             {count > 0 ? (
               <>
                 <span>
-                  Your order<span className="sr-only"> ({count} items)</span>
+                  Your order<span className="sr-only"> ({count} {count === 1 ? 'item' : 'items'})</span>
                 </span>
                 <span
                   key={addedTick}

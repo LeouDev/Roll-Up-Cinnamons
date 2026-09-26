@@ -21,7 +21,7 @@ export function ProductSection() {
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <SectionHeading id="menu-title" eyebrow={menuIntro.eyebrow} title={menuIntro.title} subtitle={menuIntro.subtitle} />
           <Reveal as="p" delay={200} className="script max-w-[16ch] rotate-[-4deg] text-[1.7rem] leading-tight text-rust md:mb-4 md:text-right">
-            homemade in Lapu-Lapu City
+            homemade in <span className="whitespace-nowrap">Lapu-Lapu City</span>
           </Reveal>
         </div>
 

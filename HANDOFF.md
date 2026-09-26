@@ -1,5 +1,7 @@
 # Roll Up Cinnamons: build handoff
 
+> **Update 27 Sep 2026:** everything in section 4 (4.1–4.13) is now built. See `README.md` for running, editing and publishing the site. The notes below describe the state at the hand-off and are kept for history.
+
 **Status:** work in progress (paused mid-build on 26 Sep 2026 to move from the cloud session to a local Mac).
 **Branch:** `claude/sharp-cori-8sbdm5` on `github.com/LeouDev/Roll-Up-Cinnamons`
 

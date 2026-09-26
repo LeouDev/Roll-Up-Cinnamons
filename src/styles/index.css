@@ -369,6 +369,23 @@
   animation: marquee 48s linear infinite;
 }
 
+/* Parallax drift tied to scroll position — native scroll-driven animation;
+   browsers without it simply show the element standing still. */
+@keyframes drift {
+  from {
+    translate: 0 var(--drift, 60px);
+  }
+  to {
+    translate: 0 calc(var(--drift, 60px) * -1);
+  }
+}
+@supports (animation-timeline: view()) {
+  .animate-drift {
+    animation: drift linear both;
+    animation-timeline: view();
+  }
+}
+
 /* Dialog transitions (entering via [open]; leaving via [data-closing]). */
 @keyframes sheet-in {
   from {
@@ -428,7 +445,8 @@ dialog[data-closing]::backdrop {
   .animate-drop-in,
   .animate-pop,
   .animate-nudge,
-  .animate-marquee {
+  .animate-marquee,
+  .animate-drift {
     animation: none !important;
   }
   *,

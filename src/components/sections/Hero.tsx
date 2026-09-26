@@ -70,7 +70,7 @@ export function Hero() {
 
             {/* Second photo, overlapping */}
             <figure
-              className="animate-float-in absolute bottom-[-3.5rem] left-[-1.5rem] hidden w-[40%] -rotate-[5deg] overflow-hidden rounded-[1.25rem] border-[6px] border-cream bg-oat shadow-lift md:block lg:bottom-[-2.5rem] lg:left-[-0.5rem] lg:w-[36%]"
+              className="animate-float-in absolute bottom-[-3.5rem] left-[-1.5rem] hidden w-[40%] -rotate-[5deg] overflow-hidden rounded-[1.25rem] border-[6px] border-cream bg-oat shadow-lift md:block lg:bottom-[-1rem] lg:left-[-0.5rem] lg:w-[33%]"
               style={delay(420)}
             >
               <div className="aspect-[3/4]">
@@ -87,13 +87,13 @@ export function Hero() {
             {/* Handwritten note */}
             <p
               aria-hidden="true"
-              className="script animate-float-in absolute top-[42%] -right-4 hidden rotate-[8deg] text-[1.65rem] leading-none text-rust xl:block"
+              className="script animate-float-in absolute top-[46%] right-[calc(100%-1rem)] hidden -rotate-6 text-[1.65rem] leading-none whitespace-nowrap text-rust xl:block"
               style={delay(650)}
             >
               three flavors,
               <br />
               one box!
-              <svg viewBox="0 0 60 40" className="mt-1 ml-2 w-12 -rotate-12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg viewBox="0 0 60 40" className="mt-1 ml-auto block w-12 -scale-x-100 rotate-12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M55 4C44 18 28 28 6 30M6 30l9-8M6 30l10 5" />
               </svg>
             </p>

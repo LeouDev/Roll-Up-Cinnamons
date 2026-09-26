@@ -1,4 +1,7 @@
+import { Footer } from './components/layout/Footer'
+import { MobileOrderBar } from './components/layout/MobileOrderBar'
 import { Navbar } from './components/layout/Navbar'
+import { OrderModal } from './components/order/OrderModal'
 import { useRevealObserver } from './components/ui/Reveal'
 import { HomePage } from './pages/HomePage'
 import { BuilderProvider } from './state/builder'
@@ -32,7 +35,9 @@ function Layout() {
       <main id="main">
         <HomePage />
       </main>
-      {/* TODO (see HANDOFF.md): <Footer />, <MobileOrderBar />, <OrderModal /> */}
+      <Footer />
+      <MobileOrderBar />
+      <OrderModal />
     </>
   )
 }

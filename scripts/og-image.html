@@ -1,0 +1,112 @@
+<!doctype html>
+<!-- Social share image (1200×630). Rendered to public/og-image.jpg by `npm run icons`. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: Fraunces;
+        font-weight: 100 900;
+        src: url(../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-soft-normal.woff2) format('woff2');
+      }
+      @font-face {
+        font-family: Fraunces;
+        font-style: italic;
+        font-weight: 100 900;
+        src: url(../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-soft-italic.woff2) format('woff2');
+      }
+      @font-face {
+        font-family: Figtree;
+        font-weight: 300 900;
+        src: url(../node_modules/@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2) format('woff2');
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+      body {
+        position: relative;
+        background: #fbf5ec;
+        color: #2a190f;
+        font-family: Figtree, sans-serif;
+      }
+      .glow {
+        position: absolute;
+        right: -240px;
+        top: -320px;
+        width: 960px;
+        height: 960px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgb(245 176 122 / 0.38), transparent);
+      }
+      .logo {
+        position: absolute;
+        left: 64px;
+        top: 58px;
+        width: 400px;
+        aspect-ratio: 1510 / 560;
+      }
+      .logo img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+      }
+      h1 {
+        position: absolute;
+        left: 76px;
+        top: 262px;
+        margin: 0;
+        font: 600 86px/0.92 Fraunces, serif;
+        font-variation-settings: 'SOFT' 100;
+        letter-spacing: -0.03em;
+      }
+      h1 em {
+        display: block;
+        font-weight: 500;
+        color: #6e3418;
+      }
+      p {
+        position: absolute;
+        left: 78px;
+        top: 482px;
+        margin: 0;
+        font-size: 17px;
+        font-weight: 650;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #a4502a;
+      }
+      .photo {
+        position: absolute;
+        right: 70px;
+        top: 40px;
+        width: 420px;
+        height: 550px;
+        overflow: hidden;
+        border-radius: 210px 210px 26px 26px;
+        background: #f4e7d4;
+        box-shadow: 0 2px 4px rgb(42 25 15 / 0.08), 0 30px 50px -18px rgb(42 25 15 / 0.4);
+      }
+      .photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 50% 64%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow"></div>
+    <div class="logo">
+      <img src="../public/brand/kraft-strip-1000.webp" style="width: 92.7%" alt="" />
+      <img src="../public/brand/logo-ink.svg" style="width: 100%" alt="" />
+    </div>
+    <h1>Soft. Warm. <em>Rolled with love.</em></h1>
+    <p>Homemade cinnamon rolls · Lapu-Lapu City</p>
+    <div class="photo"><img src="../assets/photos/box-trio.jpg" alt="" /></div>
+  </body>
+</html>
