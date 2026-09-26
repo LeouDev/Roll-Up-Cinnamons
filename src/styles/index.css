@@ -1,0 +1,441 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/fraunces/soft.css';
+@import '@fontsource-variable/fraunces/soft-italic.css';
+@import '@fontsource-variable/figtree/wght.css';
+@import '@fontsource/cedarville-cursive/latin-400.css';
+
+/* ==========================================================================
+   Design tokens — fresh cinnamon, brown sugar, warm pastry, kraft paper.
+   ========================================================================== */
+@theme {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+
+  --color-cream: #fbf5ec; /* page background */
+  --color-paper: #fffaf3; /* raised surfaces: sheets, dialogs */
+  --color-oat: #f4e7d4; /* alternate sections */
+  --color-sand: #e7d3b8; /* hairlines on cream */
+  --color-kraft: #d09c68; /* kraft paper */
+  --color-kraft-deep: #b8844f;
+  --color-caramel: #c27b3e; /* warm caramel */
+  --color-toast: #dc8545; /* toasted orange */
+  --color-apricot: #f5b07a; /* light toasted orange (from the brand "R") */
+  --color-rust: #a4502a; /* rust — rules, sparks, small accents */
+  --color-cinnamon: #6e3418; /* deep cinnamon — primary actions */
+  --color-cinnamon-deep: #542711;
+  --color-chocolate: #2a190f; /* text */
+  --color-espresso: #1d110a; /* footer */
+  --color-cocoa: #5c4232; /* secondary text */
+  --color-muted: #7a604f; /* tertiary text */
+
+  --font-display: 'Fraunces Variable', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-sans: 'Figtree Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-script: 'Cedarville Cursive', 'Segoe Script', 'Bradley Hand', cursive;
+
+  --ease-soft: cubic-bezier(0.22, 0.68, 0.24, 1);
+  --ease-spring: cubic-bezier(0.34, 1.5, 0.64, 1);
+
+  --shadow-soft: 0 1px 2px rgb(42 25 15 / 0.06), 0 8px 24px -8px rgb(42 25 15 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(42 25 15 / 0.08), 0 22px 44px -16px rgb(42 25 15 / 0.35);
+
+  --breakpoint-xs: 26rem;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+@layer base {
+  :root {
+    --gutter: 1.25rem;
+    --nav-h: 4rem;
+    --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2  0 0 0 0 .11  0 0 0 0 .05  0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  @media (width >= 40rem) {
+    :root {
+      --gutter: 2rem;
+    }
+  }
+  @media (width >= 64rem) {
+    :root {
+      --gutter: 3rem;
+      --nav-h: 4.75rem;
+    }
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--nav-h) + 0.5rem);
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+    overflow-x: clip;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+  html:has(dialog[open]) {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background: var(--color-cream);
+    color: var(--color-chocolate);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: clip;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    font-variation-settings: 'SOFT' 100;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--color-apricot);
+    color: var(--color-chocolate);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-rust);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  dialog {
+    color: inherit;
+    max-width: none;
+    max-height: none;
+  }
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+@utility container-page {
+  width: min(100% - 2 * var(--gutter), 82rem);
+  margin-inline: auto;
+}
+
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-rust);
+}
+
+@utility text-h2 {
+  font-size: clamp(2.35rem, 1.45rem + 3.4vw, 4.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.022em;
+}
+
+@utility text-h3 {
+  font-size: clamp(1.6rem, 1.25rem + 1.3vw, 2.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+}
+
+@utility text-lead {
+  font-size: clamp(1.0625rem, 0.98rem + 0.35vw, 1.3rem);
+  line-height: 1.55;
+}
+
+@utility italic-accent {
+  font-style: italic;
+  font-weight: 500;
+}
+
+@utility script {
+  font-family: var(--font-script);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Subtle paper grain over a surface's own background colour. */
+@utility grain {
+  background-image: var(--noise);
+  background-size: 240px 240px;
+}
+
+/* Kraft-paper surface (CSS only): kraft colour, soft mottling, grain. */
+@utility kraft {
+  background-color: var(--color-kraft);
+  background-image:
+    var(--noise), radial-gradient(120% 90% at 20% 10%, rgb(255 236 205 / 0.28), transparent 55%),
+    radial-gradient(90% 80% at 85% 90%, rgb(120 64 24 / 0.22), transparent 60%);
+  background-size:
+    240px 240px,
+    100% 100%,
+    100% 100%;
+}
+
+/* Torn-paper top/bottom edges for a section — uses the section's colour. */
+@utility torn-edges {
+  position: relative;
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 26px;
+    background: inherit;
+    background-image: none;
+    mask: url('../assets/torn-edge.svg') repeat-x 0 0 / 1440px 26px;
+    pointer-events: none;
+  }
+  &::before {
+    top: -25px;
+  }
+  &::after {
+    bottom: -25px;
+    transform: scaleY(-1);
+    mask-position: 37% 0;
+  }
+}
+
+/* Animated underline for text links. */
+@utility link-underline {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1.5px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.35s var(--ease-soft);
+  &:hover,
+  &[aria-current='true'] {
+    background-size: 100% 1.5px;
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Motion
+   ========================================================================== */
+
+/* Scroll reveals — only when JS is running (see index.html). */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition:
+    opacity 0.9s var(--ease-soft),
+    transform 1s var(--ease-soft);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.js [data-reveal='fade'] {
+  transform: none;
+}
+.js [data-reveal='zoom'] {
+  transform: scale(0.96);
+}
+.js [data-reveal][data-visible] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Hero entrance — pure CSS so it runs on first paint, before JS. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 30px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes settle {
+  from {
+    transform: scale(1.07);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes float-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 40px, 0) rotate(-6deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 1s var(--ease-soft) both;
+  animation-delay: var(--d, 0ms);
+}
+.animate-settle {
+  animation: settle 1.8s var(--ease-soft) both;
+}
+.animate-float-in {
+  animation: float-in 1.2s var(--ease-soft) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* A roll dropping into its slot in the box. */
+@keyframes drop-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -26px, 0) scale(0.55) rotate(-24deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(0, 3px, 0) scale(1.06) rotate(4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+.animate-drop-in {
+  animation: drop-in 0.6s var(--ease-soft) both;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.28);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-pop {
+  animation: pop 0.42s var(--ease-spring);
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: translateX(-5px);
+  }
+  60% {
+    transform: translateX(4px);
+  }
+}
+.animate-nudge {
+  animation: nudge 0.36s ease-in-out;
+}
+
+@keyframes marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+.animate-marquee {
+  animation: marquee 48s linear infinite;
+}
+
+/* Dialog transitions (entering via [open]; leaving via [data-closing]). */
+@keyframes sheet-in {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+@keyframes sheet-out {
+  to {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+@keyframes drawer-in {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+@keyframes drawer-out {
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+dialog::backdrop {
+  background: rgb(29 17 10 / 0.55);
+  backdrop-filter: blur(3px);
+  animation: fade-in 0.3s ease both;
+}
+dialog[data-closing]::backdrop {
+  animation: fade-out 0.25s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .animate-rise,
+  .animate-settle,
+  .animate-float-in,
+  .animate-drop-in,
+  .animate-pop,
+  .animate-nudge,
+  .animate-marquee {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

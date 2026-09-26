@@ -1,0 +1,39 @@
+{
+  "name": "roll-up-cinnamons",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Website for Roll Up Cinnamons \u2014 homemade soft cinnamon rolls in Lapu-Lapu City.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "images": "node scripts/build-images.mjs",
+    "brand": "node scripts/build-brand.mjs"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "dependencies": {
+    "@fontsource-variable/figtree": "^5.3.0",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "lucide-react": "^1.48.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@fontsource/cedarville-cursive": "^5.3.0",
+    "@fontsource/rammetto-one": "^5.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "opentype.js": "^2.0.0",
+    "sharp": "^0.35.4",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1"
+  }
+}
