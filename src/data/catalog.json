@@ -19,8 +19,8 @@
     },
     {
       "id": "cookies-and-cream",
-      "name": "Cookies & Cream",
-      "note": "Chocolate cookie crumble",
+      "name": "Oreos",
+      "note": "Classic with oreo topping",
       "image": "flavor-cookie-crumble",
       "imageAlt": "Cinnamon roll topped with dark chocolate cookie crumbs over frosting",
       "swatch": "#3b2a22",
@@ -28,8 +28,8 @@
     },
     {
       "id": "cookie-butter",
-      "name": "Cookie Butter",
-      "note": "Biscuit crumble & drizzle",
+      "name": "Biscoff",
+      "note": "Classic with biscoff spread and cookie",
       "image": "flavor-caramel-biscuit",
       "imageAlt": "Cinnamon roll topped with golden biscuit crumble and a caramel-colored drizzle",
       "swatch": "#b8712e",
