@@ -6,6 +6,7 @@ import { useOrder } from '../../state/order'
 import { ArrowNudge, Button } from '../ui/Button'
 import { Dialog } from '../ui/Dialog'
 import { Picture } from '../ui/Picture'
+import { SoldOut } from '../ui/SoldOut'
 import { Stepper } from '../ui/Stepper'
 
 type ProductOptionsProps = {
@@ -22,15 +23,16 @@ export function ProductOptions({ product, onClose }: ProductOptionsProps) {
 
   useEffect(() => {
     if (product) {
-      setOptionId(product.options?.[0]?.id ?? '')
+      setOptionId((product.options?.find((o) => o.available) ?? product.options?.[0])?.id ?? '')
       setQty(1)
     }
   }, [product])
 
   const option = options.find((o) => o.id === optionId) ?? options[0]
+  const canAdd = !!product?.available && !!option?.available
 
   const add = () => {
-    if (!product || !option) return
+    if (!product || !option || !canAdd) return
     addProduct(product.id, option.id, qty)
     onClose()
     window.setTimeout(openOrder, 320)
@@ -67,7 +69,7 @@ export function ProductOptions({ product, onClose }: ProductOptionsProps) {
                 {options.map((o) => (
                   <label
                     key={o.id}
-                    className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-chocolate/12 px-4 py-3.5 transition-colors has-checked:border-chocolate has-checked:bg-oat/60"
+                    className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-chocolate/12 px-4 py-3.5 transition-colors has-checked:border-chocolate has-checked:bg-oat/60 has-disabled:cursor-not-allowed has-disabled:opacity-60"
                   >
                     <span className="flex items-center gap-3">
                       <input
@@ -76,6 +78,7 @@ export function ProductOptions({ product, onClose }: ProductOptionsProps) {
                         value={o.id}
                         checked={o.id === option?.id}
                         onChange={() => setOptionId(o.id)}
+                        disabled={!o.available}
                         className="size-4 accent-cinnamon"
                       />
                       <span>
@@ -83,7 +86,7 @@ export function ProductOptions({ product, onClose }: ProductOptionsProps) {
                         {o.detail && <span className="block text-sm text-muted">{o.detail}</span>}
                       </span>
                     </span>
-                    <span className="shrink-0 text-sm font-bold text-cinnamon">{priceLabel(o.price)}</span>
+                    {o.available ? <span className="shrink-0 text-sm font-bold text-cinnamon">{priceLabel(o.price)}</span> : <SoldOut />}
                   </label>
                 ))}
               </div>
@@ -103,8 +106,14 @@ export function ProductOptions({ product, onClose }: ProductOptionsProps) {
           </div>
 
           <div className="shrink-0 border-t border-chocolate/10 bg-paper px-6 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:px-8">
-            <Button size="lg" className="w-full" onClick={add} data-autofocus>
-              Add to order <ArrowNudge />
+            <Button size="lg" className="w-full" onClick={add} disabled={!canAdd} data-autofocus>
+              {canAdd ? (
+                <>
+                  Add to order <ArrowNudge />
+                </>
+              ) : (
+                'Sold out'
+              )}
             </Button>
           </div>
         </div>

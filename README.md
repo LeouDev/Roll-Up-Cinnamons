@@ -2,9 +2,11 @@
 
 Website for **Roll Up Cinnamons**, homemade soft cinnamon rolls in Babag 2, Lapu-Lapu City.
 
-Visitors see the rolls, **build a box of 4** with their own mix of flavors, review the order and **send it through Messenger**. There's no payment or backend: the bakery confirms every order in the chat.
+Visitors see the rolls, **build a box of 4** with their own mix of flavors, review the order and **send it through Messenger**. There's no payment step: the bakery confirms every order in the chat.
 
-Built with Vite, React, TypeScript and Tailwind CSS. It's a single static page, so any static host can serve it.
+Products, prices, photos and what's sold out are managed from the **menu admin** at `/admin/` (see below).
+
+Built with Vite, React, TypeScript and Tailwind CSS, hosted on Vercel. The page itself is static and prerendered; the only server code is the small admin API in `api/admin.js`.
 
 ---
 
@@ -23,22 +25,46 @@ npm run dev        # → http://localhost:5173
 | `npm run build` | Typecheck, build and prerender the page into `dist/` |
 | `npm run preview` | Serve the built `dist/` locally, to check it before publishing |
 | `npm run typecheck` | TypeScript only |
-| `npm run images` | Rebuild the optimized photos after adding or swapping one |
+| `npm run check:admin` | Test the admin API (login, validation, publishing) against a fake GitHub |
+| `npm run images` | Optimize new or changed photos (also runs before `dev` and `build`) |
 | `npm run icons` | Rebuild the favicons and the social share image (needs Google Chrome) |
 | `npm run brand` | Rebuild the logo files (only if the logo itself changes) |
 
 ---
 
+## Menu admin
+
+Open **`/admin/`** on the live site (https://roll-up-cinnamons.vercel.app/admin/) and log in with the admin password. From there you can:
+
+- change **prices** (the box of 4, and each size of other products, like cheese roll packs),
+- mark anything **Sold out** or **Available** (sold-out items stay on the menu with a tag, but can't be ordered),
+- add, edit or delete **flavors** and **products**, with their sizes and prices,
+- upload **photos** straight from your phone (they're shrunk before upload; flavors are cropped square, products 4:5, from the centre).
+
+Press **Publish** and the site updates in about a minute: the admin saves the menu as a commit in the GitHub repository (`src/data/catalog.json`, plus photos in `assets/photos/uploads/`), and Vercel rebuilds automatically. Every change is in the GitHub history, so any edit can be undone there.
+
+If you also change the code on your computer, run `git pull` first so you have the admin's latest menu.
+
+### One-time setup
+
+Add three environment variables in Vercel (Project → Settings → Environment Variables, for *Production*), then redeploy:
+
+| Name | Value |
+| --- | --- |
+| `ADMIN_PASSWORD` | The admin password: at least 12 characters (a few random words work well). |
+| `ADMIN_SECRET` | A long random string that signs the login cookie. Create one with `openssl rand -base64 32`. Changing it logs everyone out. |
+| `GITHUB_TOKEN` | A GitHub **fine-grained token**: GitHub → Settings → Developer settings → Fine-grained tokens → *Only select repositories*: `Roll-Up-Cinnamons` → Permissions: **Contents: Read and write**. Tokens expire (up to a year); when it does, make a new one and replace it here. |
+
+Logins last 14 days. Keep the password private: anyone with it can change the menu.
+
 ## Editing the content
 
-All text, prices and business details live in `src/data/`. You never need to touch the layout code to change them.
+Menu items and prices are easiest to change in the admin. Everything else lives in `src/data/`, so you never need to touch the layout code.
 
 | To change | Edit | Notes |
 | --- | --- | --- |
-| **Box price** | `src/data/products.ts` → `boxSizes` → `price` | `null` shows "Price on request" and totals say "confirmed in Messenger". Put a number in pesos (e.g. `price: 350`) and every price and total on the site updates. |
-| **Box sizes** | `products.ts` → `boxSizes` | Add e.g. `{ id: 'box-6', label: 'Box of 6', rolls: 6, price: null }`; the size picker and the box drawing adapt on their own. |
-| **Flavors** | `products.ts` → `flavors` | Change `name` / `note`, set `placeholderName: false` once a name is confirmed. A new flavor needs a round photo (see *Photos* below). `swatch` is the color of its little dot. |
-| **Cheese rolls** | `products.ts` → `products` → Cheese Rolls → `options` | Pack size (`detail`) and `price`. |
+| **Prices, flavors, products, availability** | The admin, or `src/data/catalog.json` | A price of `null` (empty in the admin) shows "Price on request" and totals say "confirmed in Messenger". |
+| **Box sizes** | `catalog.json` → `boxSizes` | Add e.g. `{ "id": "box-6", "label": "Box of 6", "rolls": 6, "price": null }`; the size picker and the box drawing adapt on their own. |
 | **Opening hours** | `src/data/site.ts` → `hours` | e.g. `[{ days: 'Mon – Sat', time: '9:00 AM – 6:00 PM' }]`. Empty shows "Message us to check today's availability." |
 | **Phone / email** | `site.ts` → `phone`, `email` | Hidden while `null`. |
 | **Live website address** | `site.ts` → `url` | Now `https://roll-up-cinnamons.vercel.app`. Change it if the site gets its own domain, so link previews and Google point to the right address. |
@@ -49,10 +75,12 @@ All text, prices and business details live in `src/data/`. You never need to tou
 
 ## Photos
 
+Product and flavor photos are easiest to change in the admin. For the other photos (hero, gallery, about):
+
 1. Put the original photo in `assets/photos/` (JPEG or PNG, as large as you have).
 2. Add or edit its entry in `scripts/images.config.mjs`. `crop` is `[left, top, width, height]` in pixels of the original; leave it out to use the whole photo.
-3. Run `npm run images`. Optimized AVIF/WebP versions are written to `public/images/`.
-4. Use the photo's `id` in `src/data/` (e.g. a flavor's `image`).
+3. Run `npm run images`. Optimized AVIF/WebP versions are written to `public/images/` (only new or changed photos are processed).
+4. Use the photo's `id` in `src/data/` (e.g. `gallery.ts`).
 
 After changing the hero photo or logo, run `npm run icons` to refresh the image shown when the site is shared (`public/og-image.jpg`, drawn from `scripts/og-image.html`).
 
@@ -83,10 +111,11 @@ The build prerenders the page, so the content, social previews and Google's busi
 
 The site only states facts from the bakery's Facebook page. Everything else is a placeholder that's hidden or clearly softened until it's filled in:
 
-- [ ] **Box of 4 price**: `products.ts` → `boxSizes[0].price` (now "Price on request")
-- [ ] **Flavor names**: `products.ts` → `flavors[].name` (now Classic / Cookies & Cream / Cookie Butter, named after the photos)
-- [ ] **More flavors**, each with a photo: `products.ts` → `flavors`
-- [ ] **Cheese rolls pack size and price**: `products.ts` → Cheese Rolls `options`
+- [ ] **Admin setup**: the three environment variables above
+- [ ] **Box of 4 price** (admin, now "Price on request")
+- [ ] **Flavor names** (admin; now Classic / Cookies & Cream / Cookie Butter, named after the photos)
+- [ ] **More flavors**, each with a photo (admin)
+- [ ] **Cheese rolls pack sizes and prices** (admin)
 - [ ] **Opening hours**: `site.ts` → `hours`
 - [ ] **Phone / email**, if the bakery wants them shown: `site.ts`
 - [ ] **Own domain** (optional): add it in Vercel, then update `site.ts` → `url`
@@ -101,7 +130,9 @@ The site only states facts from the bakery's Facebook page. Everything else is a
 ## Where things are
 
 ```
-src/data/         content, prices, flavors, photos list (edit these)
+src/data/         content, menu (catalog.json), photos list (edit these)
+src/admin/        the menu admin page (/admin/)
+api/admin.js      the admin API: login, validation, publishing to GitHub
 src/components/   page sections, layout, order drawer, UI pieces
 src/lib/order.ts  prices, totals and the Messenger message
 src/state/        the order and the box builder

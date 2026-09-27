@@ -1,18 +1,20 @@
 /**
  * Builds optimized, responsive images from the originals in assets/.
  *
- *   npm run images
+ *   npm run images   (also runs before `dev` and `build`)
  *
  * Reads scripts/images.config.mjs, writes AVIF + WebP files at several widths
  * to public/images/, and regenerates src/data/images.generated.ts (sizes,
- * srcsets and a tiny blurred placeholder for each photo).
+ * srcsets and a tiny blurred placeholder for each photo). Photos that were
+ * processed before are reused, so only new or changed ones get encoded.
  */
 import { createHash } from 'node:crypto'
-import { mkdir, readdir, rm, writeFile, readFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
-import config from './images.config.mjs'
+import config, { catalog } from './images.config.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const outDir = path.join(root, 'public/images')
@@ -21,36 +23,62 @@ const manifestPath = path.join(root, 'src/data/images.generated.ts')
 const AVIF = { quality: 58, effort: 6 }
 const WEBP = { quality: 80, effort: 6 }
 
-await mkdir(outDir, { recursive: true })
-for (const file of await readdir(outDir)) {
-  if (/\.(avif|webp|jpe?g|png)$/.test(file)) await rm(path.join(outDir, file))
+/** Centred crop with the given width/height ratio. */
+function aspectCrop(width, height, aspect) {
+  if (width / height > aspect) {
+    const w = Math.round(height * aspect)
+    return { left: Math.round((width - w) / 2), top: 0, width: w, height }
+  }
+  const h = Math.round(width / aspect)
+  return { left: 0, top: Math.round((height - h) / 2), width, height: h }
 }
 
+/** Output file names of a manifest entry. */
+const outputs = (entry) => [entry.avif, entry.webp].flatMap((set) => set.split(', ').map((s) => s.split(' ')[0].slice('images/'.length)))
+
+await mkdir(outDir, { recursive: true })
+const previous = await readFile(manifestPath, 'utf8')
+  .then((ts) => JSON.parse(ts.slice(ts.indexOf('{'), ts.lastIndexOf('}') + 1)))
+  .catch(() => ({}))
 const manifest = {}
+let encoded = 0
 
 for (const entry of config) {
-  const input = await readFile(path.join(root, entry.src))
-  const base = () => {
-    const img = sharp(input).rotate()
-    if (!entry.crop) return img
-    const [left, top, width, height] = entry.crop
-    return img.extract({ left, top, width, height })
+  const input = await readFile(path.join(root, entry.src)).catch(() => {
+    throw new Error(`Photo "${entry.id}" is missing: ${entry.src}`)
+  })
+  const hash = createHash('sha1').update(input).update(JSON.stringify(entry)).digest('hex').slice(0, 8)
+
+  // Unchanged since last time and its files are all there: reuse as is.
+  const done = previous[entry.id]
+  if (done?.src.includes(`.${hash}.`) && outputs(done).every((f) => existsSync(path.join(outDir, f)))) {
+    manifest[entry.id] = done
+    continue
   }
+
+  let crop = entry.crop && { left: entry.crop[0], top: entry.crop[1], width: entry.crop[2], height: entry.crop[3] }
+  if (entry.aspect) {
+    const { width, height, orientation = 1 } = await sharp(input).metadata()
+    crop = orientation >= 5 ? aspectCrop(height, width, entry.aspect) : aspectCrop(width, height, entry.aspect)
+  }
+  const base = () => (crop ? sharp(input).rotate().extract(crop) : sharp(input).rotate())
 
   const meta = await base().toBuffer({ resolveWithObject: true })
   const { width, height } = meta.info
   const widths = [...new Set(entry.widths.filter((w) => w < width).concat(width))].sort((a, b) => a - b)
-  const hash = createHash('sha1').update(input).update(JSON.stringify(entry)).digest('hex').slice(0, 8)
 
   const sources = { avif: [], webp: [] }
   for (const w of widths) {
     for (const format of ['avif', 'webp']) {
       const file = `${entry.id}-${w}.${hash}.${format}`
-      const pipeline = base().resize({ width: w, withoutEnlargement: true })
-      await (format === 'avif' ? pipeline.avif(AVIF) : pipeline.webp(WEBP)).toFile(path.join(outDir, file))
+      if (!existsSync(path.join(outDir, file))) {
+        const pipeline = base().resize({ width: w, withoutEnlargement: true })
+        await (format === 'avif' ? pipeline.avif(AVIF) : pipeline.webp(WEBP)).toFile(path.join(outDir, file))
+      }
       sources[format].push(`images/${file} ${w}w`)
     }
   }
+  encoded++
 
   // ~16px-wide blurred preview, inlined as a data URI.
   const lqip = await base().resize({ width: 16 }).webp({ quality: 45 }).toBuffer()
@@ -63,10 +91,21 @@ for (const entry of config) {
     webp: sources.webp.join(', '),
     lqip: `data:image/webp;base64,${lqip.toString('base64')}`,
   }
-  console.log(`✓ ${entry.id.padEnd(24)} ${width}×${height}  → ${widths.join(', ')}`)
+  console.log(`✓ ${entry.id} (${width}×${height})`)
+}
+
+// Every photo the menu uses must exist, or the deploy stops here (the live site stays as it was).
+for (const item of [...catalog.flavors, ...catalog.products]) {
+  if (!manifest[item.image]) throw new Error(`catalog.json: "${item.name}" uses photo "${item.image}", which isn't in scripts/images.config.mjs`)
+}
+
+// Drop files no photo uses any more.
+const keep = new Set(Object.values(manifest).flatMap(outputs))
+for (const file of await readdir(outDir)) {
+  if (/\.(avif|webp|jpe?g|png)$/.test(file) && !keep.has(file)) await rm(path.join(outDir, file))
 }
 
 const banner = '// AUTO-GENERATED by scripts/build-images.mjs — run `npm run images`. Do not edit by hand.\n'
-const body = `export const images = ${JSON.stringify(manifest, null, 2)} as const\n\nexport type ImageId = keyof typeof images\n`
-await writeFile(manifestPath, banner + body)
-console.log(`\nWrote ${Object.keys(manifest).length} images to public/images and ${path.relative(root, manifestPath)}`)
+const ts = banner + `export const images = ${JSON.stringify(manifest, null, 2)} as const\n\nexport type ImageId = keyof typeof images\n`
+if (ts !== (await readFile(manifestPath, 'utf8').catch(() => ''))) await writeFile(manifestPath, ts)
+console.log(`Images: ${Object.keys(manifest).length} ready, ${encoded} newly processed.`)

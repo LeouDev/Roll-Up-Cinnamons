@@ -2,6 +2,7 @@ import { flavors, type Product } from '../../data/products'
 import { formatPrice, startingBoxPrice } from '../../lib/order'
 import { ArrowNudge } from '../ui/Button'
 import { Picture } from '../ui/Picture'
+import { SoldOut } from '../ui/SoldOut'
 
 type ProductCardProps = {
   product: Product
@@ -33,9 +34,15 @@ export function ProductCard({ product, onSelect, className = '' }: ProductCardPr
             className="size-full object-cover transition-transform duration-[1.4s] ease-(--ease-soft) group-hover:scale-[1.045]"
           />
         </div>
-        <span className="absolute top-4 left-4 rounded-full bg-cream/92 px-3.5 py-2 text-[0.6875rem] leading-none font-bold tracking-[0.14em] text-chocolate uppercase shadow-soft backdrop-blur-sm md:top-5 md:left-5">
-          {product.tag}
-        </span>
+        {!product.available ? (
+          <SoldOut className="absolute top-4 left-4 shadow-soft md:top-5 md:left-5" />
+        ) : (
+          product.tag && (
+            <span className="absolute top-4 left-4 rounded-full bg-cream/92 px-3.5 py-2 text-[0.6875rem] leading-none font-bold tracking-[0.14em] text-chocolate uppercase shadow-soft backdrop-blur-sm md:top-5 md:left-5">
+              {product.tag}
+            </span>
+          )
+        )}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgb(42_25_15/0.07)]"
@@ -60,7 +67,8 @@ export function ProductCard({ product, onSelect, className = '' }: ProductCardPr
               className="flex items-center gap-2 rounded-full border border-chocolate/12 py-1.5 pr-3.5 pl-2 text-[0.8125rem] font-medium text-cocoa"
             >
               <span className="size-3 rounded-full ring-1 ring-chocolate/10" style={{ background: f.swatch }} />
-              {f.name}
+              <span className={f.available ? '' : 'line-through opacity-60'}>{f.name}</span>
+              {!f.available && <span className="sr-only">(sold out)</span>}
             </li>
           ))}
         </ul>

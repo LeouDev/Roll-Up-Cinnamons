@@ -1,7 +1,7 @@
 import { Plus, RotateCcw, Shuffle, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { builderIntro } from '../../data/content'
-import { boxSizes, flavors, getFlavor, products, type Flavor, type Product } from '../../data/products'
+import { boxProduct, boxSizes, flavors, getFlavor, products, type Flavor, type Product } from '../../data/products'
 import { useInView } from '../../lib/hooks'
 import { flavorBreakdown, priceLabel } from '../../lib/order'
 import { useBuilder } from '../../state/builder'
@@ -11,11 +11,15 @@ import { ArrowNudge, Button } from '../ui/Button'
 import { Picture } from '../ui/Picture'
 import { Reveal } from '../ui/Reveal'
 import { SectionHeading } from '../ui/SectionHeading'
+import { SoldOut } from '../ui/SoldOut'
 import { Stepper } from '../ui/Stepper'
 
 const legend = 'mb-3 text-xs font-bold tracking-[0.16em] text-muted uppercase'
 // Everything that isn't built as a box (e.g. cheese rolls) is offered next to the builder.
 const extras = products.filter((p) => p.action === 'options')
+// A flavor can be picked only while it and the boxes themselves are in stock.
+const canPick = (f: Flavor) => !!boxProduct?.available && f.available
+const anyInStock = flavors.some(canPick)
 
 export function BoxBuilder() {
   const box = useBuilder()
@@ -39,6 +43,7 @@ export function BoxBuilder() {
   const tally = (n: number) => `${n} of ${box.capacity} picked.`
 
   const pick = (f: Flavor) => {
+    if (!canPick(f)) return
     if (box.add(f.id)) return setStatus(`${f.name} added — ${tally(box.picked + 1)}`)
     setFullFor(box.slots)
     setShake(true)
@@ -154,6 +159,7 @@ export function BoxBuilder() {
               <ul className="grid gap-3 @xl:grid-cols-3 @xl:gap-4">
                 {flavors.map((f) => {
                   const count = box.countOf(f.id)
+                  const soldOut = !canPick(f)
                   return (
                     <li
                       key={f.id}
@@ -162,9 +168,10 @@ export function BoxBuilder() {
                       }`}
                     >
                       <span className="relative shrink-0">
-                        <span className="block size-14 overflow-hidden rounded-full bg-oat shadow-soft @xl:size-28">
+                        <span className={`block size-14 overflow-hidden rounded-full bg-oat shadow-soft @xl:size-28 ${soldOut ? 'opacity-55 grayscale-[35%]' : ''}`}>
                           <Picture image={f.image} alt="" sizes="(min-width: 640px) 112px, 56px" className="size-full scale-110 object-cover" />
                         </span>
+                        {soldOut && <SoldOut className="absolute -bottom-1.5 left-1/2 -translate-x-1/2" />}
                         {count > 0 && (
                           <span
                             key={count}
@@ -180,7 +187,8 @@ export function BoxBuilder() {
                         <button
                           type="button"
                           onClick={() => pick(f)}
-                          aria-label={`Add ${f.name} to your box`}
+                          disabled={soldOut}
+                          aria-label={soldOut ? `${f.name}, sold out` : `Add ${f.name} to your box`}
                           className="text-left font-display text-[1.2rem] leading-tight after:absolute after:inset-0 after:content-[''] @xl:text-center @xl:text-[1.4rem]"
                         >
                           {f.name}
@@ -191,6 +199,7 @@ export function BoxBuilder() {
                         value={count}
                         label={f.name}
                         onIncrement={() => pick(f)}
+                        canIncrement={!soldOut}
                         onDecrement={() => {
                           box.removeOne(f.id)
                           removed(f)
@@ -207,7 +216,7 @@ export function BoxBuilder() {
               <Button
                 variant="secondary"
                 size="sm"
-                disabled={box.isFull}
+                disabled={box.isFull || !anyInStock}
                 onClick={() => {
                   box.surprise()
                   setStatus(`Mixed it up — ${tally(box.capacity)}`)
@@ -239,10 +248,16 @@ export function BoxBuilder() {
                 </p>
               </div>
               <p className="mt-3 text-cocoa">
-                {breakdown.length ? breakdown.map(({ flavor, count }) => `${count} × ${flavor.name}`).join(' · ') : 'No rolls yet — pick your first flavor.'}
+                {!anyInStock
+                  ? 'Sold out for now — message us to check what’s available.'
+                  : breakdown.length
+                    ? breakdown.map(({ flavor, count }) => `${count} × ${flavor.name}`).join(' · ')
+                    : 'No rolls yet — pick your first flavor.'}
               </p>
               <Button size="lg" className="mt-6 w-full" disabled={!box.isFull} onClick={addToOrder}>
-                {box.isFull ? (
+                {!anyInStock ? (
+                  'Sold out'
+                ) : box.isFull ? (
                   <>
                     Add to order <ArrowNudge />
                   </>
@@ -267,9 +282,13 @@ export function BoxBuilder() {
                       <span className="block font-display text-[1.3rem] leading-tight">{p.name}</span>
                       <span className="mt-0.5 block text-sm leading-snug text-muted">{p.description}</span>
                     </span>
-                    <Button variant="secondary" size="sm" onClick={() => setExtra(p)} aria-label={`Add ${p.name}`}>
-                      <Plus className="size-4" aria-hidden="true" /> Add
-                    </Button>
+                    {p.available ? (
+                      <Button variant="secondary" size="sm" onClick={() => setExtra(p)} aria-label={`Add ${p.name}`}>
+                        <Plus className="size-4" aria-hidden="true" /> Add
+                      </Button>
+                    ) : (
+                      <SoldOut />
+                    )}
                   </li>
                 ))}
               </ul>

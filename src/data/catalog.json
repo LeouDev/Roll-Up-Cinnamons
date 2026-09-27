@@ -1,0 +1,70 @@
+{
+  "boxSizes": [
+    {
+      "id": "box-4",
+      "label": "Box of 4",
+      "rolls": 4,
+      "price": null
+    }
+  ],
+  "flavors": [
+    {
+      "id": "classic",
+      "name": "Classic",
+      "note": "Creamy frosting swirl",
+      "image": "flavor-classic",
+      "imageAlt": "Cinnamon roll with a thick swirl of creamy frosting, seen from above",
+      "swatch": "#ecd79a",
+      "available": true
+    },
+    {
+      "id": "cookies-and-cream",
+      "name": "Cookies & Cream",
+      "note": "Chocolate cookie crumble",
+      "image": "flavor-cookie-crumble",
+      "imageAlt": "Cinnamon roll topped with dark chocolate cookie crumbs over frosting",
+      "swatch": "#3b2a22",
+      "available": true
+    },
+    {
+      "id": "cookie-butter",
+      "name": "Cookie Butter",
+      "note": "Biscuit crumble & drizzle",
+      "image": "flavor-caramel-biscuit",
+      "imageAlt": "Cinnamon roll topped with golden biscuit crumble and a caramel-colored drizzle",
+      "swatch": "#b8712e",
+      "available": true
+    }
+  ],
+  "products": [
+    {
+      "id": "cinnamon-rolls",
+      "name": "Cinnamon Rolls",
+      "description": "Soft homemade cinnamon rolls with different flavors and toppings.",
+      "image": "plate-single-card",
+      "imageAlt": "A homemade cinnamon roll topped with biscuit crumble on a plate, with a kraft box of rolls behind it",
+      "tag": "Box of 4 · pick your flavors",
+      "action": "builder",
+      "available": true
+    },
+    {
+      "id": "cheese-rolls",
+      "name": "Cheese Rolls",
+      "description": "Soft homemade cheese rolls.",
+      "image": "cheese-rolls-card",
+      "imageAlt": "A tray of soft homemade cheese rolls dusted with sugar",
+      "tag": "Homemade",
+      "action": "options",
+      "available": true,
+      "options": [
+        {
+          "id": "cheese-rolls-pack",
+          "label": "Cheese rolls",
+          "detail": "Pack size confirmed in Messenger",
+          "price": null,
+          "available": true
+        }
+      ]
+    }
+  ]
+}

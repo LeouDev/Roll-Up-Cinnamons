@@ -74,8 +74,10 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const surprise = useCallback(() => {
+    const inStock = flavors.filter((f) => f.available)
+    if (!inStock.length) return
     setJustFilled(slots.flatMap((s, i) => (s ? [] : [i])))
-    setSlots(slots.map((s) => s ?? flavors[Math.floor(Math.random() * flavors.length)].id))
+    setSlots(slots.map((s) => s ?? inStock[Math.floor(Math.random() * inStock.length)].id))
   }, [slots])
 
   const reset = useCallback(() => {

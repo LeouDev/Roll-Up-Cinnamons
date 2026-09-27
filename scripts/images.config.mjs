@@ -11,7 +11,23 @@
  *
  * Widths larger than the (cropped) source are skipped automatically, so
  * nothing is ever upscaled.
+ *
+ * Photos uploaded from the admin page need no entry here: they're saved to
+ * assets/photos/uploads/ and picked up from catalog.json below.
  */
+import { readFileSync } from 'node:fs'
+
+export const catalog = JSON.parse(readFileSync(new URL('../src/data/catalog.json', import.meta.url), 'utf8'))
+
+// Uploads are cropped from the centre: square for flavors (shown round), 4:5 for products.
+const uploads = [...new Set([...catalog.flavors, ...catalog.products].map((item) => item.image))]
+  .filter((id) => id.startsWith('upload-'))
+  .map((id) => ({
+    id,
+    src: `assets/photos/uploads/${id}.jpg`,
+    ...(id.startsWith('upload-flavor-') ? { aspect: 1, widths: [160, 320, 480] } : { aspect: 4 / 5, widths: [360, 540, 720, 960] }),
+  }))
+
 export default [
   // Hero — three rolls in the kraft box (Facebook post photo).
   { id: 'box-trio', src: 'assets/photos/box-trio.jpg', widths: [360, 540, 720] },
@@ -39,4 +55,6 @@ export default [
 
   // Original logo on kraft paper (from the Facebook page).
   { id: 'logo-kraft-square', src: 'assets/brand/logo-kraft-square.jpg', widths: [360, 540, 720] },
+
+  ...uploads,
 ]

@@ -1,4 +1,4 @@
-import { boxSizes, currency, flavors, getBoxSize, getFlavor, getProduct, type Flavor, type Price } from '../data/products'
+import { boxProduct, boxSizes, currency, flavors, getBoxSize, getFlavor, getProduct, type Flavor, type Price } from '../data/products'
 import { site } from '../data/site'
 
 export type BoxLine = { id: string; kind: 'box'; sizeId: string; flavors: string[]; qty: number }
@@ -65,10 +65,11 @@ export function lineTitle(line: OrderLine): string {
   if (line.kind === 'box') return getBoxSize(line.sizeId)?.label ?? 'Box'
   const product = getProduct(line.productId)
   const option = product?.options?.find((o) => o.id === line.optionId)
-  return option?.label ?? product?.name ?? 'Item'
+  if (!product || !option) return product?.name ?? 'Item'
+  return product.options!.length > 1 ? `${product.name} · ${option.label}` : option.label
 }
 
-/** Drops anything that no longer exists in the menu (e.g. a removed flavor). */
+/** Drops anything no longer on the menu or now sold out (a saved order can be days old). */
 export function sanitizeLines(input: unknown): OrderLine[] {
   if (!Array.isArray(input)) return []
   return input.flatMap((raw): OrderLine[] => {
@@ -78,12 +79,13 @@ export function sanitizeLines(input: unknown): OrderLine[] {
     const id = typeof l.id === 'string' ? l.id : newId()
     if (l.kind === 'box' && typeof l.sizeId === 'string' && Array.isArray(l.flavors)) {
       const size = getBoxSize(l.sizeId)
-      const ids = l.flavors.filter((f): f is string => typeof f === 'string' && !!getFlavor(f))
-      const valid = size && ids.length === size.rolls && ids.length === l.flavors.length
+      const ids = l.flavors.filter((f): f is string => typeof f === 'string' && !!getFlavor(f)?.available)
+      const valid = size && boxProduct?.available && ids.length === size.rolls && ids.length === l.flavors.length
       return valid ? [{ id, kind: 'box', sizeId: l.sizeId, flavors: ids, qty }] : []
     }
     if (l.kind === 'product' && typeof l.productId === 'string' && typeof l.optionId === 'string') {
-      const valid = getProduct(l.productId)?.options?.some((o) => o.id === l.optionId)
+      const product = getProduct(l.productId)
+      const valid = product?.available && product.options?.some((o) => o.id === l.optionId && o.available)
       return valid ? [{ id, kind: 'product', productId: l.productId, optionId: l.optionId, qty }] : []
     }
     return []
