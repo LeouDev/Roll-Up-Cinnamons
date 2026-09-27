@@ -51,11 +51,10 @@ export const site = {
   hours: [] as { days: string; time: string }[],
 
   /**
-   * The live address (Vercel). Change it if the site moves to its own
-   * domain, e.g. 'https://rollupcinnamons.com'. Used for the canonical URL,
-   * social previews and structured data.
+   * The live address (the bare domain redirects here). Used for the
+   * canonical URL, social previews and structured data.
    */
-  url: 'https://roll-up-cinnamons.vercel.app',
+  url: 'https://www.rollup-cinnamon.online',
 } as const
 
 export type NavItem = { label: string; href: string }
