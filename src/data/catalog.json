@@ -4,7 +4,7 @@
       "id": "box-4",
       "label": "Box of 4",
       "rolls": 4,
-      "price": null
+      "price": 240
     }
   ],
   "flavors": [
@@ -61,7 +61,7 @@
           "id": "cheese-rolls-pack",
           "label": "Cheese rolls",
           "detail": "Pack size confirmed in Messenger",
-          "price": null,
+          "price": 12,
           "available": true
         }
       ]
