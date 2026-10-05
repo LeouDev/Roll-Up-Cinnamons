@@ -97,7 +97,7 @@ After changing the hero photo or logo, run `npm run icons` to refresh the image 
 ## How ordering works
 
 1. The customer fills a box of 4 (flavors can repeat) and adds it to the order. The order is saved in their browser, so a refresh doesn't lose it.
-2. **Order via Messenger** opens a chat with the page (`site.links.messenger`) and puts the order text, with a short reference like `RU-7K3F`, in the message. It's also copied to the clipboard, because Messenger sometimes drops pre-filled text, so the customer can just paste it.
+2. **Copy order & open Messenger** copies the order text, with a short reference like `RU-7K3F`, and opens a chat with the page (`site.links.messenger`). Messenger doesn't let websites fill in a message, so the customer pastes it and presses send; the screen tells them to. (If the browser blocks copying, the order text is shown to copy by hand.)
 3. The bakery confirms the order details and total in Messenger.
 
 ---

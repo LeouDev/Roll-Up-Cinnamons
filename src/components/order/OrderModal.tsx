@@ -54,7 +54,7 @@ function OrderSheet() {
   }
   const messengerLink = (
     <ButtonLink href={messengerUrl(message)} target="_blank" rel="noopener" onClick={send} size="lg" className="w-full">
-      <MessengerIcon size={18} /> {sent ? 'Open Messenger again' : 'Order via Messenger'}
+      <MessengerIcon size={18} /> {sent ? 'Open Messenger again' : 'Copy order & open Messenger'}
     </ButtonLink>
   )
 
@@ -85,13 +85,13 @@ function OrderSheet() {
           <p className="mx-auto mt-4 max-w-[32ch] text-cocoa">
             {sent.copied ? (
               <>
-                Your order (<strong className="text-chocolate">{reference}</strong>) is copied — paste it in the chat if it isn’t there
-                already.
+                Your order (<strong className="text-chocolate">{reference}</strong>) is copied. In the Messenger chat, paste it and
+                press send.
               </>
             ) : (
               <>
-                Your order is <strong className="text-chocolate">{reference}</strong>. If the chat is empty, copy the message below and
-                send it to us.
+                Your order is <strong className="text-chocolate">{reference}</strong>. Copy the message below, then paste it in the
+                Messenger chat and press send.
               </>
             )}
           </p>
