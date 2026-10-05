@@ -55,6 +55,9 @@ export const site = {
    * canonical URL, social previews and structured data.
    */
   url: 'https://www.rollup-cinnamon.online',
+
+  /** Where photos uploaded from the admin are served (Supabase Storage, public bucket). */
+  menuPhotos: 'https://nrxrayvnjqfjiclkiwhf.supabase.co/storage/v1/object/public/menu-photos/',
 } as const
 
 export type NavItem = { label: string; href: string }

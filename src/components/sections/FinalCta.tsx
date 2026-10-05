@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { finalCta } from '../../data/content'
-import { flavors } from '../../data/products'
+import { useMenu } from '../../data/products'
 import { scrollToId } from '../../lib/hooks'
 import { itemCount } from '../../lib/order'
 import { useOrder } from '../../state/order'
@@ -15,6 +15,7 @@ const floats = [
 ]
 
 export function FinalCta() {
+  const { flavors } = useMenu()
   const { lines, openOrder } = useOrder()
   const words = finalCta.title.split(' ')
   const accent = words.pop()

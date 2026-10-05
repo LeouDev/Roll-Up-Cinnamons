@@ -1,8 +1,10 @@
+import { useEffect } from 'react'
 import { Footer } from './components/layout/Footer'
 import { MobileOrderBar } from './components/layout/MobileOrderBar'
 import { Navbar } from './components/layout/Navbar'
 import { OrderModal } from './components/order/OrderModal'
 import { useRevealObserver } from './components/ui/Reveal'
+import { refreshMenu } from './data/products'
 import { HomePage } from './pages/HomePage'
 import { BuilderProvider } from './state/builder'
 import { OrderProvider } from './state/order'
@@ -23,6 +25,13 @@ export default function App() {
 
 function Layout() {
   useRevealObserver()
+  // Pick up admin changes made since this page was built, and again when the tab comes back.
+  useEffect(() => {
+    refreshMenu()
+    const onShow = () => document.visibilityState === 'visible' && refreshMenu()
+    document.addEventListener('visibilitychange', onShow)
+    return () => document.removeEventListener('visibilitychange', onShow)
+  }, [])
   return (
     <>
       <a

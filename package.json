@@ -7,7 +7,7 @@
   "scripts": {
     "predev": "node scripts/build-images.mjs",
     "dev": "vite",
-    "build": "node scripts/build-images.mjs && tsc --noEmit && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
+    "build": "node scripts/pull-menu.mjs && node scripts/build-images.mjs && tsc --noEmit && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "check:admin": "node scripts/check-admin-api.mjs",

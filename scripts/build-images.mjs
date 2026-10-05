@@ -14,7 +14,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
-import config, { catalog } from './images.config.mjs'
+import config from './images.config.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const outDir = path.join(root, 'public/images')
@@ -94,9 +94,13 @@ for (const entry of config) {
   console.log(`✓ ${entry.id} (${width}×${height})`)
 }
 
-// Every photo the menu uses must exist, or the deploy stops here (the live site stays as it was).
+// Every built-in photo the menu uses must exist, or the deploy stops here (the
+// live site stays as it was). Admin uploads ("upload-…") live in Supabase Storage.
+const catalog = JSON.parse(await readFile(path.join(root, 'src/data/catalog.json'), 'utf8'))
 for (const item of [...catalog.flavors, ...catalog.products]) {
-  if (!manifest[item.image]) throw new Error(`catalog.json: "${item.name}" uses photo "${item.image}", which isn't in scripts/images.config.mjs`)
+  if (!item.image.startsWith('upload-') && !manifest[item.image]) {
+    throw new Error(`catalog.json: "${item.name}" uses photo "${item.image}", which isn't in scripts/images.config.mjs`)
+  }
 }
 
 // Drop files no photo uses any more.

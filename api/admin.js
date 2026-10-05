@@ -1,33 +1,32 @@
 /**
  * Admin API for the menu editor at /admin/.
  *
- *   GET    → the latest menu (src/data/catalog.json on GitHub); needs a session
- *   POST   { password }                  → log in (sets a session cookie)
- *   PUT    { catalog, baseSha, photos }  → validate and commit to GitHub;
- *                                          Vercel then republishes the site
- *   DELETE                               → log out
+ *   GET    → the live menu (Supabase table public.menu); needs a session
+ *   POST   { password }                      → log in (sets a session cookie)
+ *   PUT    { catalog, baseVersion, photos }  → validate and save to Supabase;
+ *                                              the site shows it right away
+ *   DELETE                                   → log out
  *
  * Set in Vercel → Settings → Environment Variables:
- *   ADMIN_PASSWORD  the admin password (12+ characters)
- *   ADMIN_SECRET    long random string that signs the login cookie
- *   GITHUB_TOKEN    fine-grained token: this repository, Contents read & write
+ *   ADMIN_PASSWORD        the admin password (12+ characters)
+ *   ADMIN_SECRET          long random string that signs the login cookie
+ *   SUPABASE_SECRET_KEY   Supabase → Project Settings → API Keys → a secret key
+ *   VERCEL_DEPLOY_HOOK    optional: also rebuild the static pages after a save
  */
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
+import { PHOTO_BUCKET, SupabaseError, readMenu, supabase } from './_supabase.js'
 
-const CATALOG = 'src/data/catalog.json'
-const UPLOADS = 'assets/photos/uploads'
 const COOKIE = 'rollup_admin'
 const SESSION_SECONDS = 14 * 24 * 60 * 60
 
 class HttpError extends Error {
-  constructor(status, message, upstream) {
+  constructor(status, message) {
     super(message)
     this.status = status
-    this.upstream = upstream
   }
 }
-const fail = (status, message, upstream) => {
-  throw new HttpError(status, message, upstream)
+const fail = (status, message) => {
+  throw new HttpError(status, message)
 }
 const bad = (message) => fail(400, message)
 
@@ -40,6 +39,13 @@ const handle = (fn) => async (request) => {
   } catch (e) {
     if (e instanceof HttpError) return json({ error: e.message }, e.status)
     console.error(e)
+    if (e instanceof SupabaseError) {
+      const why =
+        e.status === 401
+          ? 'Supabase didn’t accept SUPABASE_SECRET_KEY. Check it in Vercel (Supabase → Project Settings → API Keys).'
+          : 'Couldn’t reach the menu database. If the Supabase project is paused, restore it in the Supabase dashboard.'
+      return json({ error: why }, 502)
+    }
     return json({ error: 'Something went wrong. Please try again.' }, 500)
   }
 }
@@ -48,9 +54,9 @@ const handle = (fn) => async (request) => {
 // Session
 // ---------------------------------------------------------------------------
 function requireSetup() {
-  const { ADMIN_PASSWORD = '', ADMIN_SECRET = '', GITHUB_TOKEN = '' } = process.env
-  if (ADMIN_PASSWORD.length < 12 || ADMIN_SECRET.length < 16 || !GITHUB_TOKEN) {
-    fail(503, 'The admin isn’t set up yet: add ADMIN_PASSWORD (12+ characters), ADMIN_SECRET and GITHUB_TOKEN in Vercel, then redeploy.')
+  const { ADMIN_PASSWORD = '', ADMIN_SECRET = '', SUPABASE_SECRET_KEY = '' } = process.env
+  if (ADMIN_PASSWORD.length < 12 || ADMIN_SECRET.length < 16 || !SUPABASE_SECRET_KEY) {
+    fail(503, 'The admin isn’t set up yet: add ADMIN_PASSWORD (12+ characters), ADMIN_SECRET and SUPABASE_SECRET_KEY in Vercel, then redeploy.')
   }
 }
 
@@ -75,68 +81,31 @@ async function readJson(request) {
 }
 
 // ---------------------------------------------------------------------------
-// GitHub
+// Saving
 // ---------------------------------------------------------------------------
-const repo = () => ({
-  owner: process.env.VERCEL_GIT_REPO_OWNER || 'LeouDev',
-  name: process.env.VERCEL_GIT_REPO_SLUG || 'Roll-Up-Cinnamons',
-  branch: process.env.GITHUB_BRANCH || process.env.VERCEL_GIT_COMMIT_REF || 'main',
-})
-
-async function github(path, { method = 'GET', body } = {}) {
-  const { owner, name } = repo()
-  const res = await fetch(`https://api.github.com/repos/${owner}/${name}${path}`, {
-    method,
-    headers: {
-      accept: 'application/vnd.github+json',
-      authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      'user-agent': 'roll-up-cinnamons-admin',
-      'x-github-api-version': '2022-11-28',
-      ...(body && { 'content-type': 'application/json' }),
-    },
-    body: body && JSON.stringify(body),
+// Photos are never deleted, so every version kept in menu_history can still be restored.
+const uploadPhoto = ({ id, data }) =>
+  supabase(`/storage/v1/object/${PHOTO_BUCKET}/${id}.jpg`, {
+    method: 'POST',
+    headers: { 'content-type': 'image/jpeg', 'x-upsert': 'true', 'cache-control': 'max-age=31536000' },
+    body: Buffer.from(data, 'base64'),
   })
-  if (res.ok) return res.json()
-  if (res.status === 401) fail(502, 'GitHub didn’t accept GITHUB_TOKEN. It may have expired; make a new one and update it in Vercel.', 401)
-  if (res.status === 403 || res.status === 404)
-    fail(502, `GITHUB_TOKEN can’t reach ${owner}/${name}. It needs Contents: read and write on this repository.`, res.status)
-  fail(502, `GitHub error ${res.status}. Please try again.`, res.status)
+
+/** Saves only if nobody else saved since `version` was read (the database bumps the number). */
+async function saveMenu(catalog, version) {
+  const [saved] = await supabase(`/rest/v1/menu?id=eq.1&version=eq.${version}&select=catalog,version`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json', prefer: 'return=representation' },
+    body: JSON.stringify({ catalog }),
+  })
+  if (!saved) fail(409, 'Someone saved at the same moment. Reload to get the latest version, then save again.')
+  return saved
 }
 
-async function readCatalog(ref) {
-  const file = await github(`/contents/${CATALOG}?ref=${encodeURIComponent(ref)}`)
-  return { catalog: JSON.parse(Buffer.from(file.content, 'base64').toString('utf8')), sha: file.sha }
-}
-
-/** One commit with every change, so Vercel builds once. Returns the new catalog.json blob sha. */
-async function commit(parent, files, removed, message) {
-  const { branch } = repo()
-  const { tree: base } = await github(`/git/commits/${parent}`)
-  const blobs = await Promise.all(
-    files.map((f) => github('/git/blobs', { method: 'POST', body: { content: f.content, encoding: f.encoding } })),
-  )
-  const makeTree = (deletions) =>
-    github('/git/trees', {
-      method: 'POST',
-      body: {
-        base_tree: base.sha,
-        tree: [
-          ...files.map((f, i) => ({ path: f.path, mode: '100644', type: 'blob', sha: blobs[i].sha })),
-          ...deletions.map((path) => ({ path, mode: '100644', type: 'blob', sha: null })),
-        ],
-      },
-    })
-  // GitHub refuses to delete a file that's already gone; then just skip the clean-up.
-  const tree = await makeTree(removed).catch((e) => (e.upstream === 422 && removed.length ? makeTree([]) : Promise.reject(e)))
-  const created = await github('/git/commits', { method: 'POST', body: { message, tree: tree.sha, parents: [parent] } })
-  try {
-    await github(`/git/refs/heads/${branch}`, { method: 'PATCH', body: { sha: created.sha } })
-  } catch (e) {
-    // Not a fast-forward: something was pushed a moment ago.
-    if (e.upstream === 422) fail(409, 'Someone saved at the same moment. Please save again.')
-    throw e
-  }
-  return blobs[0].sha
+/** Optional: rebuild the static pages so the HTML matches too (the site already updates in the browser). */
+async function rebuildPages() {
+  const hook = process.env.VERCEL_DEPLOY_HOOK
+  if (hook) await fetch(hook, { method: 'POST' }).catch((e) => console.error('Deploy hook failed', e))
 }
 
 // ---------------------------------------------------------------------------
@@ -254,7 +223,7 @@ const photosOf = (catalog) => [...catalog.flavors, ...catalog.products].map((ite
 export const GET = handle(async (request) => {
   requireSetup()
   requireSession(request)
-  return json(await readCatalog(repo().branch))
+  return json(await readMenu())
 })
 
 export const POST = handle(async (request) => {
@@ -266,7 +235,7 @@ export const POST = handle(async (request) => {
     fail(401, 'Wrong password.')
   }
   const expires = String(Date.now() + SESSION_SECONDS * 1000)
-  return json(await readCatalog(repo().branch), 200, { 'set-cookie': cookie(`${expires}.${sign(expires)}`, SESSION_SECONDS) })
+  return json(await readMenu(), 200, { 'set-cookie': cookie(`${expires}.${sign(expires)}`, SESSION_SECONDS) })
 })
 
 export const PUT = handle(async (request) => {
@@ -274,9 +243,8 @@ export const PUT = handle(async (request) => {
   requireSession(request)
   const body = object(await readJson(request), 'Request')
 
-  const head = (await github(`/git/ref/heads/${repo().branch}`)).object.sha
-  const current = await readCatalog(head)
-  if (body.baseSha !== current.sha) {
+  const current = await readMenu()
+  if (body.baseVersion !== current.version) {
     fail(409, 'The menu was changed somewhere else after you opened it. Reload to get the latest version, then make your changes again.')
   }
 
@@ -285,17 +253,10 @@ export const PUT = handle(async (request) => {
   const catalog = cleanCatalog(body.catalog, known)
   const used = new Set(photosOf(catalog))
 
-  const files = [
-    { path: CATALOG, content: `${JSON.stringify(catalog, null, 2)}\n`, encoding: 'utf-8' },
-    ...photos.filter((p) => used.has(p.id)).map((p) => ({ path: `${UPLOADS}/${p.id}.jpg`, content: p.data, encoding: 'base64' })),
-  ]
-  // Uploaded photos nothing uses any more.
-  const removed = photosOf(current.catalog)
-    .filter((id) => UPLOAD_ID.test(id) && !used.has(id))
-    .map((id) => `${UPLOADS}/${id}.jpg`)
-
-  const sha = await commit(head, files, [...new Set(removed)], 'Update the menu from the admin page')
-  return json({ catalog, sha })
+  await Promise.all(photos.filter((p) => used.has(p.id)).map(uploadPhoto))
+  const saved = await saveMenu(catalog, current.version)
+  await rebuildPages()
+  return json(saved)
 })
 
 export const DELETE = handle(async () => json({ ok: true }, 200, { 'set-cookie': cookie('', 0) }))

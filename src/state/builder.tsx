@@ -1,5 +1,5 @@
-import { createContext, use, useCallback, useMemo, useState, type ReactNode } from 'react'
-import { boxSizes, flavors } from '../data/products'
+import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { boxProduct, boxSizes, flavors, getFlavor, useMenu } from '../data/products'
 
 /**
  * Build Your Box state. Lives in context (not inside <BoxBuilder>) so the
@@ -37,6 +37,15 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   const [sizeId, setSize] = useState(boxSizes[0].id)
   const capacity = boxSizes.find((b) => b.id === sizeId)?.rolls ?? 4
   const [slots, setSlots] = useState<(string | null)[]>(() => emptySlots(capacity))
+
+  // A newer menu can mark picked flavors (or the boxes) sold out: take those back out.
+  const menu = useMenu()
+  useEffect(() => {
+    setSlots((prev) => {
+      const next = prev.map((id) => (id && boxProduct?.available && getFlavor(id)?.available ? id : null))
+      return next.some((id, i) => id !== prev[i]) ? next : prev
+    })
+  }, [menu])
   const [inView, setInView] = useState(false)
   const [justFilled, setJustFilled] = useState<number[]>([])
 

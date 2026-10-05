@@ -6,7 +6,7 @@ Visitors see the rolls, **build a box of 4** with their own mix of flavors, revi
 
 Products, prices, photos and what's sold out are managed from the **menu admin** at `/admin/` (see below).
 
-Built with Vite, React, TypeScript and Tailwind CSS, hosted on Vercel. The page itself is static and prerendered; the only server code is the small admin API in `api/admin.js`.
+Built with Vite, React, TypeScript and Tailwind CSS, hosted on Vercel, with the menu in **Supabase** (project *Rollup_Cinnamon*). The page itself is static and prerendered; the only server code is `api/admin.js` (the admin) and `api/menu.js` (the live menu feed).
 
 ---
 
@@ -39,23 +39,33 @@ Open **`/admin/`** on the live site (https://www.rollup-cinnamon.online/admin/) 
 - change **prices** (the box of 4, and each size of other products, like cheese roll packs),
 - mark anything **Sold out** or **Available** (sold-out items stay on the menu with a tag, but can't be ordered),
 - add, edit or delete **flavors** and **products**, with their sizes and prices,
-- upload **photos** straight from your phone (they're shrunk before upload; flavors are cropped square, products 4:5, from the centre).
+- upload **photos** straight from your phone (cropped from the centre in the browser, square for flavors and 4:5 for products, then shrunk before upload).
 
-Press **Publish** and the site updates in about a minute: the admin saves the menu as a commit in the GitHub repository (`src/data/catalog.json`, plus photos in `assets/photos/uploads/`), and Vercel rebuilds automatically. Every change is in the GitHub history, so any edit can be undone there.
+Press **Publish** and it's live: the admin saves the menu in Supabase (table `menu`, photos in the `menu-photos` storage bucket), and the website loads the latest menu every time it opens, so visitors see the change on their next visit or refresh. Each build also copies the live menu into the page itself (`scripts/pull-menu.mjs`), so search engines and slow connections see it too.
 
-If you also change the code on your computer, run `git pull` first so you have the admin's latest menu.
+How it holds up:
+
+- **Two people saving at once** can't overwrite each other: the second one is asked to reload.
+- **Undo:** every earlier version is kept in the `menu_history` table. To go back, open Supabase → SQL Editor and run (with the version you want):
+  ```sql
+  update menu set catalog = (select catalog from menu_history where version = 12) where id = 1;
+  ```
+  Uploaded photos are never deleted, so old versions keep their photos.
+- **If Supabase is unreachable**, the website shows the menu from its last build and the admin says it can't reach the database. Free Supabase projects pause after a week without activity; a daily request from Vercel (`vercel.json` → `crons`) keeps it awake. If it ever pauses, press *Restore* in the Supabase dashboard.
+- `src/data/catalog.json` in the repo is only the fallback copy. To refresh it on your computer: `SUPABASE_SECRET_KEY=… node scripts/pull-menu.mjs`.
 
 ### One-time setup
 
-Add three environment variables in Vercel (Project → Settings → Environment Variables, for *Production*), then redeploy:
+The database tables, permissions and photo bucket are in `supabase/migrations/`. Add these environment variables in Vercel (Project → Settings → Environment Variables, for *Production*), then redeploy:
 
 | Name | Value |
 | --- | --- |
 | `ADMIN_PASSWORD` | The admin password: at least 12 characters (a few random words work well). |
 | `ADMIN_SECRET` | A long random string that signs the login cookie. Create one with `openssl rand -base64 32`. Changing it logs everyone out. |
-| `GITHUB_TOKEN` | A GitHub **fine-grained token**: GitHub → Settings → Developer settings → Fine-grained tokens → *Only select repositories*: `Roll-Up-Cinnamons` → Permissions: **Contents: Read and write**. Tokens expire (up to a year); when it does, make a new one and replace it here. |
+| `SUPABASE_SECRET_KEY` | Supabase → Project Settings → API Keys → *Secret keys* → create one (starts with `sb_secret_`). It's used only on the server; never put it in the website code or share it. |
+| `VERCEL_DEPLOY_HOOK` | *Optional.* Vercel → Settings → Git → Deploy Hooks → create one for `main`. With it, each Publish also rebuilds the page so the built-in copy of the menu stays current. |
 
-Logins last 14 days. Keep the password private: anyone with it can change the menu.
+Logins last 14 days. Keep the password private: anyone with it can change the menu. The database itself can't be read or changed with the public keys; only these server functions use it.
 
 ## Editing the content
 
@@ -63,8 +73,8 @@ Menu items and prices are easiest to change in the admin. Everything else lives 
 
 | To change | Edit | Notes |
 | --- | --- | --- |
-| **Prices, flavors, products, availability** | The admin, or `src/data/catalog.json` | A price of `null` (empty in the admin) shows "Price on request" and totals say "confirmed in Messenger". |
-| **Box sizes** | `catalog.json` → `boxSizes` | Add e.g. `{ "id": "box-6", "label": "Box of 6", "rolls": 6, "price": null }`; the size picker and the box drawing adapt on their own. |
+| **Prices, flavors, products, availability** | The admin | An empty price shows "Price on request" and totals say "confirmed in Messenger". |
+| **Box sizes** | Supabase → Table Editor → `menu` → `catalog` → `boxSizes` | Add e.g. `{ "id": "box-6", "label": "Box of 6", "rolls": 6, "price": null }`; the size picker and the box drawing adapt on their own. |
 | **Opening hours** | `src/data/site.ts` → `hours` | e.g. `[{ days: 'Mon – Sat', time: '9:00 AM – 6:00 PM' }]`. Empty shows "Message us to check today's availability." |
 | **Phone / email** | `site.ts` → `phone`, `email` | Hidden while `null`. |
 | **Live website address** | `site.ts` → `url` | Now `https://www.rollup-cinnamon.online`. If the domain changes, update it here so link previews and Google point to the right address. |
@@ -111,7 +121,7 @@ The build prerenders the page, so the content, social previews and Google's busi
 
 The site only states facts from the bakery's Facebook page. Everything else is a placeholder that's hidden or clearly softened until it's filled in:
 
-- [ ] **Admin setup**: the three environment variables above
+- [ ] **Admin setup**: the environment variables above
 - [ ] **Box of 4 price** (admin, now "Price on request")
 - [ ] **Flavor names** (admin; now Classic / Cookies & Cream / Cookie Butter, named after the photos)
 - [ ] **More flavors**, each with a photo (admin)
@@ -129,9 +139,11 @@ The site only states facts from the bakery's Facebook page. Everything else is a
 ## Where things are
 
 ```
-src/data/         content, menu (catalog.json), photos list (edit these)
+src/data/         content, built-in menu copy (catalog.json), photos list
 src/admin/        the menu admin page (/admin/)
-api/admin.js      the admin API: login, validation, publishing to GitHub
+api/admin.js      the admin API: login, validation, saving to Supabase
+api/menu.js       the live menu feed the website loads
+supabase/         database setup (tables, permissions, photo bucket)
 src/components/   page sections, layout, order drawer, UI pieces
 src/lib/order.ts  prices, totals and the Messenger message
 src/state/        the order and the box builder

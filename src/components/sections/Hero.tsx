@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { hero } from '../../data/content'
-import { flavors } from '../../data/products'
+import { useMenu } from '../../data/products'
 import { scrollToId } from '../../lib/hooks'
 import { itemCount } from '../../lib/order'
 import { useOrder } from '../../state/order'
@@ -12,6 +12,7 @@ import { Stamp } from '../ui/Stamp'
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
 export function Hero() {
+  const { flavors } = useMenu()
   const { lines, openOrder } = useOrder()
   const onOrder = () => (itemCount(lines) > 0 ? openOrder() : scrollToId('build-your-box'))
 

@@ -4,15 +4,15 @@ import { Logo } from '../components/brand/Logo'
 import { Button } from '../components/ui/Button'
 import { Picture } from '../components/ui/Picture'
 import { images, type ImageId } from '../data/images.generated'
-import type { BoxSize, Catalog, Product } from '../data/products'
+import { isUpload, type BoxSize, type Catalog, type Product, type UploadId } from '../data/products'
 
 /**
  * Menu admin (/admin/): edit products, flavors, prices, photos and what's
- * sold out. Publishing sends the menu to api/admin.js, which commits it to
- * GitHub; Vercel then rebuilds the site.
+ * sold out. Publishing sends the menu to api/admin.js, which saves it in
+ * Supabase; the website shows it right away.
  */
 
-type Menu = { catalog: Catalog; sha: string }
+type Menu = { catalog: Catalog; version: number }
 /** Photos picked this session: preview URL, plus the JPEG until it's published. */
 type Photos = Record<string, { url: string; data?: string }>
 type Status = { kind: 'idle' | 'saving' | 'saved' } | { kind: 'error'; message: string; conflict?: boolean }
@@ -43,17 +43,23 @@ async function api<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', body?: unknown)
   return data as T
 }
 
-/** Shrinks a phone photo to 1600 px at most and re-encodes it as JPEG, so uploads stay small. */
-async function toJpeg(file: File) {
+/**
+ * Crops a phone photo from the centre to the shape the site shows it in
+ * (square for flavors, 4:5 for products), shrinks it and re-encodes it as
+ * JPEG. The site serves this file as is, so it's kept small.
+ */
+async function toJpeg(file: File, aspect: number, width: number) {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
-  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height))
+  let [sw, sh] = [bitmap.width, bitmap.height]
+  if (sw / sh > aspect) sw = Math.round(sh * aspect)
+  else sh = Math.round(sw / aspect)
   const canvas = document.createElement('canvas')
-  canvas.width = Math.round(bitmap.width * scale)
-  canvas.height = Math.round(bitmap.height * scale)
+  canvas.width = Math.min(width, sw)
+  canvas.height = Math.round(canvas.width / aspect)
   const ctx = canvas.getContext('2d')!
   ctx.fillStyle = '#fbf5ec' // transparent PNGs get the page's cream, not black
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  ctx.drawImage(bitmap, (bitmap.width - sw) / 2, (bitmap.height - sh) / 2, sw, sh, 0, 0, canvas.width, canvas.height)
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.86))
   if (!blob) throw new Error('Unreadable photo')
   const data = await new Promise<string>((resolve) => {
@@ -203,12 +209,12 @@ function Editor({ menu, onLogout }: { menu: Menu; onLogout: () => void }) {
     setStatus({ kind: 'idle' })
   }
 
-  const pickPhoto = async (kind: 'flavor' | 'product', file: File, apply: (c: Catalog, id: ImageId) => void) => {
+  const pickPhoto = async (kind: 'flavor' | 'product', file: File, apply: (c: Catalog, id: UploadId) => void) => {
     try {
-      const photo = await toJpeg(file)
-      const id = `upload-${kind}-${randomId()}${randomId()}`
+      const photo = kind === 'flavor' ? await toJpeg(file, 1, 600) : await toJpeg(file, 4 / 5, 960)
+      const id: UploadId = `upload-${kind}-${randomId()}${randomId()}`
       setPhotos((p) => ({ ...p, [id]: photo }))
-      change((c) => apply(c, id as ImageId))
+      change((c) => apply(c, id))
     } catch {
       setStatus({ kind: 'error', message: 'That photo couldn’t be opened. Try a JPG or PNG.' })
     }
@@ -220,7 +226,7 @@ function Editor({ menu, onLogout }: { menu: Menu; onLogout: () => void }) {
       const catalog = withIds(draft)
       const used = new Set<string>([...catalog.flavors, ...catalog.products].map((item) => item.image))
       const uploads = Object.entries(photos).flatMap(([id, p]) => (p.data && used.has(id) ? [{ id, data: p.data }] : []))
-      const saved = await api<Menu>('PUT', { catalog, baseSha: published.sha, photos: uploads })
+      const saved = await api<Menu>('PUT', { catalog, baseVersion: published.version, photos: uploads })
       setPublished(saved)
       setDraft(saved.catalog)
       setPhotos((all) => Object.fromEntries(Object.entries(all).map(([id, p]) => [id, { url: p.url }])))
@@ -244,7 +250,7 @@ function Editor({ menu, onLogout }: { menu: Menu; onLogout: () => void }) {
     status.kind === 'saving'
       ? 'Publishing…'
       : status.kind === 'saved'
-        ? 'Published! The website updates in about a minute.'
+        ? 'Published! It’s on the website now.'
         : status.kind === 'error'
           ? status.message
           : dirty
@@ -556,12 +562,10 @@ function PhotoPicker({
     >
       {preview ? (
         <img src={preview} alt="" className="size-full object-cover" />
-      ) : image in images ? (
-        <Picture image={image as ImageId} alt="" sizes="112px" className="size-full object-cover" />
+      ) : image in images || isUpload(image) ? (
+        <Picture image={image as ImageId | UploadId} alt="" sizes="112px" className="size-full object-cover" />
       ) : (
-        <span className="grid size-full place-items-center p-3 text-center text-xs leading-snug text-muted">
-          {image ? 'Shows after the site updates' : 'Add a photo'}
-        </span>
+        <span className="grid size-full place-items-center p-3 text-center text-xs leading-snug text-muted">Add a photo</span>
       )}
       <span className="absolute inset-x-0 bottom-0 bg-chocolate/65 py-1 text-center text-[0.625rem] font-bold tracking-[0.12em] text-cream uppercase">
         {image ? 'Change' : 'Add'}

@@ -1,4 +1,4 @@
-import { flavors, type Product } from '../../data/products'
+import { useMenu, type Product } from '../../data/products'
 import { formatPrice, startingBoxPrice } from '../../lib/order'
 import { ArrowNudge } from '../ui/Button'
 import { Picture } from '../ui/Picture'
@@ -21,6 +21,7 @@ function priceHint(product: Product): string | null {
 
 /** Editorial product card — big photo, name, short line, one clear action. */
 export function ProductCard({ product, onSelect, className = '' }: ProductCardProps) {
+  const { flavors } = useMenu()
   const price = priceHint(product)
   const titleId = `product-${product.id}`
   return (

@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react'
 import { images, type ImageId } from '../../data/images.generated'
+import { isUpload, type UploadId } from '../../data/products'
+import { site } from '../../data/site'
 
 const base = import.meta.env.BASE_URL
 const withBase = (srcset: string) =>
@@ -9,7 +11,7 @@ const withBase = (srcset: string) =>
     .join(', ')
 
 type PictureProps = {
-  image: ImageId
+  image: ImageId | UploadId
   alt: string
   /** Rendered width hint for the browser, e.g. "(min-width: 1024px) 40vw, 90vw". */
   sizes: string
@@ -27,6 +29,20 @@ type PictureProps = {
  * real image loads.
  */
 export function Picture({ image, alt, sizes, className, position = '50% 50%', priority = false, style }: PictureProps) {
+  // Uploaded from the admin: one JPEG in Supabase Storage, already cropped and
+  // sized in the browser (the frames it sits in have a fixed shape).
+  if (isUpload(image))
+    return (
+      <img
+        src={`${site.menuPhotos}${image}.jpg`}
+        alt={alt}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
+        fetchPriority={priority ? 'high' : undefined}
+        className={className}
+        style={{ objectPosition: position, ...style }}
+      />
+    )
   const img = images[image]
   return (
     <picture className="contents">

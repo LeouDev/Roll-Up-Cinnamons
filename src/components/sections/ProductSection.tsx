@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { menuIntro } from '../../data/content'
-import { products, type Product } from '../../data/products'
+import { useMenu, type Product } from '../../data/products'
 import { scrollToId } from '../../lib/hooks'
 import { ProductCard } from '../product/ProductCard'
 import { ProductOptions } from '../product/ProductOptions'
@@ -8,6 +8,7 @@ import { Reveal } from '../ui/Reveal'
 import { SectionHeading } from '../ui/SectionHeading'
 
 export function ProductSection() {
+  const { products } = useMenu()
   const [selected, setSelected] = useState<Product | null>(null)
 
   const onSelect = (product: Product) => {

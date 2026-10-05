@@ -1,4 +1,5 @@
-import { createContext, use, useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
+import { createContext, use, useCallback, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
+import { useMenu } from '../data/products'
 import { MAX_QTY, boxKey, newId, sanitizeLines, type OrderLine } from '../lib/order'
 
 const STORAGE_KEY = 'rollup:order:v1'
@@ -10,6 +11,7 @@ type Action =
   | { type: 'remove'; id: string }
   | { type: 'clear' }
   | { type: 'restore'; lines: OrderLine[] }
+  | { type: 'sanitize' }
 
 const clampQty = (n: number) => Math.min(MAX_QTY, Math.max(1, n))
 
@@ -37,6 +39,10 @@ function reducer(lines: OrderLine[], action: Action): OrderLine[] {
       return lines.filter((l) => l.id !== action.id)
     case 'clear':
       return []
+    case 'sanitize': {
+      const kept = sanitizeLines(lines)
+      return kept.length === lines.length ? lines : kept
+    }
     case 'restore':
       return action.lines
   }
@@ -62,10 +68,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const [lines, dispatch] = useReducer(reducer, [])
   const [isOpen, setOpen] = useState(false)
   const [addedTick, setAddedTick] = useState(0)
-  const restored = useRef(false)
+  const [restored, setRestored] = useState(false)
+
+  // A newer menu can make items sold out or remove them: drop those from the order.
+  const menu = useMenu()
+  useEffect(() => dispatch({ type: 'sanitize' }), [menu])
 
   // Restore a saved order after hydration (never during render — keeps the
-  // prerendered HTML and the first client render identical).
+  // prerendered HTML and the first client render identical). Nothing is saved
+  // until it's back, so a first empty render can't overwrite the saved order.
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY)
@@ -73,17 +84,17 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     } catch {
       /* storage unavailable (private mode) — start empty */
     }
-    restored.current = true
+    setRestored(true)
   }, [])
 
   useEffect(() => {
-    if (!restored.current) return
+    if (!restored) return
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines))
     } catch {
       /* ignore */
     }
-  }, [lines])
+  }, [lines, restored])
 
   const addBox = useCallback((sizeId: string, flavors: string[]) => {
     dispatch({ type: 'addBox', sizeId, flavors })

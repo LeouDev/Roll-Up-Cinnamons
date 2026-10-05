@@ -1,7 +1,7 @@
 import { Plus, RotateCcw, Shuffle, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { builderIntro } from '../../data/content'
-import { boxProduct, boxSizes, flavors, getFlavor, products, type Flavor, type Product } from '../../data/products'
+import { getFlavor, useMenu, type Flavor, type Product } from '../../data/products'
 import { useInView } from '../../lib/hooks'
 import { flavorBreakdown, priceLabel } from '../../lib/order'
 import { useBuilder } from '../../state/builder'
@@ -15,13 +15,14 @@ import { SoldOut } from '../ui/SoldOut'
 import { Stepper } from '../ui/Stepper'
 
 const legend = 'mb-3 text-xs font-bold tracking-[0.16em] text-muted uppercase'
-// Everything that isn't built as a box (e.g. cheese rolls) is offered next to the builder.
-const extras = products.filter((p) => p.action === 'options')
-// A flavor can be picked only while it and the boxes themselves are in stock.
-const canPick = (f: Flavor) => !!boxProduct?.available && f.available
-const anyInStock = flavors.some(canPick)
-
 export function BoxBuilder() {
+  const { boxSizes, flavors, products } = useMenu()
+  // A flavor can be picked only while it and the boxes themselves are in stock.
+  const boxesInStock = !!products.find((p) => p.action === 'builder')?.available
+  const canPick = (f: Flavor) => boxesInStock && f.available
+  const anyInStock = flavors.some(canPick)
+  // Everything that isn't built as a box (e.g. cheese rolls) is offered next to the builder.
+  const extras = products.filter((p) => p.action === 'options')
   const box = useBuilder()
   const { addBox, openOrder } = useOrder()
   const ref = useRef<HTMLElement>(null)
